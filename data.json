@@ -1,0 +1,87 @@
+[
+  {
+    "id": "1",
+    "question": "bonjour",
+    "reponse": "Bonjour ! Comment puis-je vous aider ?"
+  },
+  {
+    "id": "2",
+    "question": "aide",
+    "reponse": "Je peux répondre à : bonjour, aide, météo, info"
+  },
+  {
+    "id": 3,
+    "question": "HECM",
+    "reponse": "La Haute Ecole de Commerce et de Management en abrégé (HECM), est une université privée implantée dans sept localités du Bénin depuis sa création en 1999"
+  },
+  {
+    "id": 4,
+    "question": "bonsoir",
+    "reponse": "Bonsoir ! Comment puis-je vous aider ?"
+  },
+  {
+    "id": 5,
+    "question": "Bon après midi",
+    "reponse": "Merci bien haha"
+  },
+  {
+    "id": 6,
+    "question": "Bonne nuit",
+    "reponse": "Merci et pareillement à vous"
+  },
+  {
+    "id": 8,
+    "question": "hello",
+    "reponse": "Yes hello, comment puis-je vous aider ?"
+  },
+  {
+    "id": 9,
+    "question": "hi",
+    "reponse": "hi, comment puis-je vous aider ?"
+  },
+  {
+    "id": 10,
+    "question": "cc",
+    "reponse": "Oui cc, comment puis-je vous aider ?"
+  },
+  {
+    "id": 11,
+    "question": "yo",
+    "reponse": "Yo ! Comment puis-je vous aider ?"
+  },
+  {
+    "id": 12,
+    "question": "Filières",
+    "reponse": "Voici les principales filières proposées à HECM :\n\n- RIT : Réseaux Informatiques et Télécommunications\n- SIL : Systèmes Informatiques et Logiciels\n- IIM : Ingénierie Informatique et Multimédia\n- GRH : Gestion des Ressources Humaines\n- AD : Assistant de Direction\n- JL : Journalisme et Langues"
+  },
+  {
+    "id": 13,
+    "question": "c'est quoi HECM",
+    "reponse": "La Haute Ecole de Commerce et de Management en abrégé (HECM), est une université privée implantée dans sept localités du Bénin depuis sa création en 1999"
+  },
+  {
+    "id": 14,
+    "question": "où se trouve HECM",
+    "reponse": "HECM dispose de plusieurs campus au Bénin : à Cotonou (campus Jéricho et Akpakpa), Abomey-Calavi, Bohicon, Porto-Novo, Lokossa, Parakou et Abomey. Chaque campus offre un cadre propice aux études avec des infrastructures modernes et un encadrement de qualité."
+  },
+  {
+    "id": 15,
+    "question": "qui a fondé HECM",
+    "reponse": "HECM a été fondée en 1999 par le Professeur DODJINOU Mathieu, une figure importante de l’enseignement supérieur privé au Bénin."
+  },
+  {
+    "id": 16,
+    "question": "contacts HECM",
+    "reponse": "Pour contacter HECM :\nTéléphone : +229 21 33 06 90 / 97 89 52 85\nE-mail : hecmbenin@gmail.com\nSite web : www.hecm.bj\nAdresse siège : Cotonou, quartier Jéricho."
+  },
+  {
+    "id": 17,
+    "question": "diplômes HECM",
+    "reponse": "HECM délivre des diplômes de Licence (Bac +3) et de Master (Bac +5) reconnus par l'État béninois. Les diplômes sont conformes au système LMD (Licence – Master – Doctorat) et sont appréciés sur le plan national et international."
+  },
+  {
+    "id": 18,
+    "question": "valeurs HECM",
+    "reponse": "HECM promeut des valeurs comme le professionnalisme, l’excellence académique, l’éthique, l’innovation et l’ouverture au monde. Elle vise à former des étudiants compétents et responsables."
+  }
+]

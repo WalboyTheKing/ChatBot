@@ -1,0 +1,7 @@
+{
+    "email": "",
+    "password": "",
+    "session_file": "session_cookies.txt",
+    "reconnect_attempts": 5,
+    "reconnect_delay": 10
+}

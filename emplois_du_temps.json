@@ -1,0 +1,56 @@
+[
+  {
+    "matricule": "ada",
+    "filiere": "SIL",
+    "annee": "Licence 1",
+    "emploi_du_temps": [
+      {
+        "jour": "Lundi",
+        "horaire": "8h-10h",
+        "matiere": "Informatique"
+      },
+      {
+        "jour": "Lundi",
+        "horaire": "10h-12h",
+        "matiere": "Chinois"
+      }
+    ],
+    "mot_de_passe": "12345"
+  },
+  {
+    "matricule": "adazi",
+    "filiere": "RIT",
+    "annee": "Licence 4",
+    "emploi_du_temps": [
+      {
+        "horaire": "8h-10h",
+        "jour": "Lundi",
+        "matiere": "Mathématiques"
+      },
+      {
+        "horaire": "10h-12h",
+        "jour": "Lundi",
+        "matiere": "Informatique"
+      }
+    ],
+    "mot_de_passe": "AZERTYU"
+  },
+  {
+    "matricule": "aaaa",
+    "filiere": "SIL",
+    "annee": "Licence 4",
+    "emploi_du_temps": [
+      {
+        "jour": "Lundi au vendredi",
+        "horaire": "8h-10h",
+        "matiere": "Mathématiques"
+      },
+      {
+        "jour": "Lundi au vendredi",
+        "horaire": "10h-12h",
+        "matiere": "Informatique"
+      }
+    ],
+    "mot_de_passe": "WAlking"
+  }
+]
