@@ -1,0 +1,15 @@
+<!-- ... le début reste inchangé ... -->
+
+                <!-- Historique des messages -->
+                <div class="chat-container" id="chat-container">
+                    {% for message in messages %}
+                        <div class="message {{ 'user-message' if message.sender == 'Utilisateur' else 'bot-message' }}">
+                            <div class="sender fw-bold">{{ message.sender }}</div>
+                            <div class="content">{{ message.content }}</div>
+            
+
+                        </div>
+                    {% endfor %}
+                </div>
+
+<!-- ... la suite reste inchangée ... -->
