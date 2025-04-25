@@ -16,7 +16,6 @@ FB_API_VERSION = os.getenv('FB_API_VERSION')
 
 app = Flask(__name__)
 app.secret_key = os.urandom(24)
-# ... reste du code ...
 
 DATA_FILE = 'data.json'  # Fichier de données pour les questions/réponses
 EMPLOIS_FILE = os.path.join(
@@ -28,7 +27,6 @@ COMPTES_FILE = os.path.join(
 ADMIN_USERNAME = os.getenv('ADMIN_USERNAME', 'admin')
 ADMIN_PASSWORD = os.getenv('ADMIN_PASSWORD', 'admin123')
 
-
 # Utils
 def charger_donnees():
     """Charge les données du fichier JSON"""
@@ -36,7 +34,6 @@ def charger_donnees():
         return []
     with open(DATA_FILE, 'r', encoding='utf-8') as f:
         return json.load(f)
-
 
 def charger_emplois():
     """Charge les emplois du temps depuis le fichier JSON"""
@@ -53,7 +50,6 @@ def charger_emplois():
         print(f"Erreur lors de la lecture du fichier : {e}")
         return []
 
-
 def charger_comptes():
     """Charge les comptes utilisateurs"""
     if not os.path.exists(COMPTES_FILE):
@@ -61,12 +57,10 @@ def charger_comptes():
     with open(COMPTES_FILE, 'r', encoding='utf-8') as f:
         return json.load(f)
 
-
 def sauvegarder_donnees(donnees, fichier):
     """Sauvegarde les données dans un fichier JSON"""
     with open(fichier, 'w', encoding='utf-8') as f:
         json.dump(donnees, f, indent=2, ensure_ascii=False)
-
 
 def prochain_id(donnees):
     """Retourne le prochain ID disponible"""
@@ -74,7 +68,6 @@ def prochain_id(donnees):
         return 1
     ids = [int(item['id']) for item in donnees if str(item['id']).isdigit()]
     return max(ids, default=0) + 1
-
 
 def chercher_reponse(question, donnees):
     """Cherche la réponse à une question donnée dans les données"""
@@ -90,18 +83,14 @@ def chercher_reponse(question, donnees):
 
     return "Je n'ai pas compris votre question. Pouvez-vous reformuler ou taper 'aide' ?"
 
-
 def login_required(f):
     """Décorateur pour vérifier si l'utilisateur est connecté"""
-
     @wraps(f)
     def decorated_function(*args, **kwargs):
         if not session.get('admin_logged_in'):
             return redirect(url_for('login'))
         return f(*args, **kwargs)
-
     return decorated_function
-
 
 # Routes publiques
 @app.route('/')
@@ -114,7 +103,6 @@ def index():
         'content': 'Salut ! Comment puis-je t’aider ?'
     }]
     return render_template('index.html', messages=messages)
-
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -130,13 +118,11 @@ def login():
             flash('Identifiants invalides', 'danger')
     return render_template('login.html')
 
-
 @app.route('/logout', methods=['POST'])
 def logout():
     session.pop('admin_logged_in', None)
     flash('Déconnecté avec succès', 'info')
     return redirect(url_for('login'))
-
 
 # Interface Admin
 @app.route('/admin')
@@ -144,13 +130,11 @@ def logout():
 def admin():
     return render_template('admin_layout.html')
 
-
 @app.route('/admin/questions')
 @login_required
 def admin_questions():
     donnees = charger_donnees()
     return render_template('admin_questions.html', donnees=donnees)
-
 
 @app.route('/admin/comptes')
 @login_required
@@ -158,20 +142,17 @@ def admin_comptes():
     comptes = charger_comptes()
     return render_template('admin_comptes.html', comptes=comptes)
 
-
 @app.route('/admin_emplois')
 @login_required
 def admin_emplois():
     emplois = charger_emplois()
     return render_template('admin_emplois.html', emplois=emplois)
 
-
 @app.route('/admin/etudiants')
 @login_required
 def admin_etudiants():
     emplois = charger_emplois()
     return render_template('admin_etudiants.html', emplois=emplois)
-
 
 # CRUD Questions/Réponses
 @app.route('/ajouter', methods=['POST'])
@@ -185,7 +166,6 @@ def ajouter():
     sauvegarder_donnees(donnees, DATA_FILE)
     flash('Question ajoutée avec succès', 'success')
     return redirect(url_for('admin_questions'))
-
 
 @app.route('/modifier/<int:id>', methods=['POST'])
 @login_required
@@ -202,7 +182,6 @@ def modifier(id):
     flash('Question modifiée avec succès', 'success')
     return redirect(url_for('admin_questions'))
 
-
 @app.route('/supprimer/<int:id>')
 @login_required
 def supprimer(id):
@@ -211,7 +190,6 @@ def supprimer(id):
     sauvegarder_donnees(donnees, DATA_FILE)
     flash('Question supprimée avec succès', 'danger')
     return redirect(url_for('admin_questions'))
-
 
 # Gestion des emplois du temps
 @app.route('/ajouter_emploi', methods=['POST'])
@@ -233,10 +211,8 @@ def ajouter_emploi():
     }
     emplois.append(nouvel_emploi)
     sauvegarder_donnees(emplois, EMPLOIS_FILE)
-
     flash('Emploi du temps ajouté avec succès', 'success')
     return redirect(url_for('admin_emplois'))
-
 
 @app.route('/modifier_emploi/<matricule>', methods=['POST'])
 @login_required
@@ -260,11 +236,9 @@ def modifier_emploi(matricule):
                 return redirect(url_for('admin_emplois'))
             emploi['mot_de_passe'] = mot_de_passe
             break
-
     sauvegarder_donnees(emplois, EMPLOIS_FILE)
     flash('Emploi du temps modifié avec succès', 'success')
     return redirect(url_for('admin_emplois'))
-
 
 @app.route('/supprimer_emploi/<matricule>')
 @login_required
@@ -276,7 +250,6 @@ def supprimer_emploi(matricule):
     sauvegarder_donnees(emplois, EMPLOIS_FILE)
     flash('Emploi du temps supprimé avec succès', 'danger')
     return redirect(url_for('admin_emplois'))
-
 
 # Gestion des comptes utilisateurs
 @app.route('/ajouter_compte', methods=['POST'])
@@ -297,7 +270,6 @@ def ajouter_compte():
     flash('Compte ajouté avec succès', 'success')
     return redirect(url_for('admin_comptes'))
 
-
 @app.route('/modifier_compte/<username>', methods=['POST'])
 @login_required
 def modifier_compte(username):
@@ -315,7 +287,6 @@ def modifier_compte(username):
     flash('Compte modifié avec succès', 'success')
     return redirect(url_for('admin_comptes'))
 
-
 @app.route('/supprimer_compte/<username>')
 @login_required
 def supprimer_compte(username):
@@ -324,7 +295,6 @@ def supprimer_compte(username):
     sauvegarder_donnees(comptes, COMPTES_FILE)
     flash('Compte supprimé avec succès', 'danger')
     return redirect(url_for('admin_comptes'))
-
 
 # Webhook Facebook Messenger
 @app.route('/webhook', methods=['GET', 'POST'])
@@ -337,13 +307,11 @@ def webhook():
 
     elif request.method == 'POST':
         data = request.get_json()
-
         for entry in data['entry']:
             for message in entry['messaging']:
                 if 'message' in message:
                     user_id = message['sender']['id']
                     user_message = message['message'].get('text')
-
                     # Vérification si l'étudiant demande son emploi du temps
                     if "emploi du temps" in user_message.lower():
                         # Demande du matricule
@@ -355,7 +323,6 @@ def webhook():
                             'step': 'matricule'
                         }  # Enregistrer l'état de la conversation
                         return 'OK', 200
-
                     # Si le matricule a été fourni
                     if user_id in session and session[user_id].get(
                             'step') == 'matricule':
@@ -366,7 +333,6 @@ def webhook():
                             "Veuillez maintenant entrer votre mot de passe.")
                         session[user_id]['step'] = 'mot_de_passe'
                         return 'OK', 200
-
                     # Si le mot de passe a été fourni
                     if user_id in session and session[user_id].get(
                             'step') == 'mot_de_passe':
@@ -374,7 +340,6 @@ def webhook():
                         matricule = session[user_id].get('matricule')
                         emploi_du_temps = obtenir_emploi_du_temps(
                             matricule, mot_de_passe)
-
                         if emploi_du_temps:
                             send_message(
                                 user_id,
@@ -384,18 +349,22 @@ def webhook():
                             send_message(
                                 user_id,
                                 "Désolé, matricule ou mot de passe incorrect.")
-
                         # Réinitialisation de l'état de la conversation
                         session.pop(user_id, None)
                         return 'OK', 200
-
                     # Traitement des autres questions
                     response = chercher_reponse(user_message,
                                                 charger_donnees())
                     send_message(user_id, response)
-
         return 'OK', 200
 
+def obtenir_emploi_du_temps(matricule, mot_de_passe):
+    """Récupère l'emploi du temps pour un matricule et mot de passe"""
+    emplois = charger_emplois()
+    for emploi in emplois:
+        if emploi['matricule'] == matricule and emploi['mot_de_passe'] == mot_de_passe:
+            return emploi['emploi_du_temps']
+    return None
 
 def send_message(recipient_id, message_text):
     url = f'https://graph.facebook.com/{FB_API_VERSION}/me/messages?access_token={PAGE_ACCESS_TOKEN}'
@@ -410,6 +379,5 @@ def send_message(recipient_id, message_text):
     }
     requests.post(url, json=data, headers=headers)
 
-
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=True, port=5001)
