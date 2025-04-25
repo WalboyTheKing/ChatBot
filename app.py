@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, flash, session
+FLASK_APP=app.py
 import json
 import os
 from datetime import datetime
