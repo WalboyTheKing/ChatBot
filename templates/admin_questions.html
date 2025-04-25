@@ -110,14 +110,45 @@
         .form-group button {
             align-self: center;
         }
+
+        /* Styles pour les messages flash */
+        .alert {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+            text-align: center;
+            width: 80%;
+            max-width: 600px;
+        }
+
+        .alert-success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .alert-danger {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
     </style>
 </head>
 <body>
     <div class="container">
+        <!-- Affichage des messages flash -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            {% for category, message in messages %}
+              <div class="alert alert-{{ category }}">{{ message }}</div>
+            {% endfor %}
+          {% endif %}
+        {% endwith %}
+
         <h1>Interface d'administration</h1>
 
         <h2>Ajouter une nouvelle question/réponse</h2>
-        <form action="/ajouter" method="post" class="form-group">
+        <form action="{{ url_for('ajouter') }}" method="post" class="form-group">
             <input type="text" name="question" placeholder="Question" required>
             <input type="text" name="reponse" placeholder="Réponse" required>
             <button type="submit">Ajouter</button>
@@ -133,14 +164,14 @@
             </tr>
             {% for item in donnees %}
             <tr>
-                <form class="inline" action="/modifier/{{ item.id }}" method="post">
+                <form class="inline" action="{{ url_for('modifier', id=item.id) }}" method="post">
                     <td>{{ item.id }}</td>
                     <td><input type="text" name="question" value="{{ item.question }}" required></td>
                     <td><input type="text" name="reponse" value="{{ item.reponse }}" required></td>
                     <td class="actions">
                         <button type="submit" title="Modifier">💾</button>
                     </form>
-                    <form class="inline" action="/supprimer/{{ item.id }}" method="get">
+                    <form class="inline" action="{{ url_for('supprimer', id=item.id) }}" method="get">
                         <button type="submit" class="delete" onclick="return confirm('Supprimer cette entrée ?')" title="Supprimer">🗑️</button>
                     </form>
                     </td>
