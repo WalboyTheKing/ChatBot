@@ -190,7 +190,15 @@ def ajouter():
         print(f"New ID: {nouvel_id}")
         donnees.append({'id': nouvel_id, 'question': question, 'reponse': reponse})
         sauvegarder_donnees(donnees, DATA_FILE)
-        flash('Question ajoutée avec succès', 'success')
+        # Vérifier si l'écriture a réussi
+        with open(DATA_FILE, 'r', encoding='utf-8') as f:
+            saved_data = json.load(f)
+        if any(item['id'] == nouvel_id for item in saved_data):
+            print(f"Data successfully saved to {DATA_FILE}")
+            flash('Question ajoutée avec succès', 'success')
+        else:
+            print(f"Error: Data not saved to {DATA_FILE}")
+            flash('Erreur : Les données n’ont pas été enregistrées dans le fichier', 'danger')
         return redirect(url_for('admin_questions'))
     except KeyError as e:
         print(f"Form error: Missing key {e}")
@@ -219,7 +227,15 @@ def modifier(id):
                 item['reponse'] = reponse
                 break
         sauvegarder_donnees(donnees, DATA_FILE)
-        flash('Question modifiée avec succès', 'success')
+        # Vérifier si l'écriture a réussi
+        with open(DATA_FILE, 'r', encoding='utf-8') as f:
+            saved_data = json.load(f)
+        if any(item['id'] == id and item['question'] == question and item['reponse'] == reponse for item in saved_data):
+            print(f"Data successfully saved to {DATA_FILE}")
+            flash('Question modifiée avec succès', 'success')
+        else:
+            print(f"Error: Modified data not saved to {DATA_FILE}")
+            flash('Erreur : Les modifications n’ont pas été enregistrées dans le fichier', 'danger')
         return redirect(url_for('admin_questions'))
     except Exception as e:
         print(f"Error in modifier: {e}")
@@ -234,7 +250,15 @@ def supprimer(id):
         donnees = charger_donnees()
         donnees = [item for item in donnees if int(item['id']) != id]
         sauvegarder_donnees(donnees, DATA_FILE)
-        flash('Question supprimée avec succès', 'danger')
+        # Vérifier si l'écriture a réussi
+        with open(DATA_FILE, 'r', encoding='utf-8') as f:
+            saved_data = json.load(f)
+        if not any(item['id'] == id for item in saved_data):
+            print(f"Data successfully saved to {DATA_FILE}")
+            flash('Question supprimée avec succès', 'danger')
+        else:
+            print(f"Error: Data not saved to {DATA_FILE}")
+            flash('Erreur : La suppression n’a pas été enregistrée dans le fichier', 'danger')
         return redirect(url_for('admin_questions'))
     except Exception as e:
         print(f"Error in supprimer: {e}")
