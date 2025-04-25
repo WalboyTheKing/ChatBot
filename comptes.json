@@ -1,0 +1,20 @@
+[
+  {
+    "username": "jdoe",
+    "password": "mdp1234",
+    "role": "admin",
+    "statut": "actif"
+  },
+  {
+    "username": "SECRETAIRE",
+    "password": "12345",
+    "role": "utilisateur",
+    "statut": "actif"
+  },
+  {
+    "username": "SURVEILLANT",
+    "password": "123456",
+    "role": "utilisateur",
+    "statut": "actif"
+  }
+]
