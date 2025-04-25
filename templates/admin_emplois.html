@@ -1,0 +1,197 @@
+{% extends "admin_layout.html" %}
+
+{% block content %}
+<div class="container">
+    <h1>Gestion des Emplois du Temps</h1>
+
+    {% if session['role'] == 'admin' %}
+    <section class="form-section">
+        <h2>Ajouter un emploi du temps</h2>
+        <form action="/ajouter_emploi" method="post" class="form-emploi">
+            <label>Matricule :</label>
+            <input type="text" name="matricule" placeholder="Matricule" required>
+
+            <label>Filière :</label>
+            <select name="filiere" required>
+                <option value="" disabled selected>Choisir une filière</option>
+                <option value="SIL">SIL</option>
+                <option value="RIT">RIT</option>
+                <option value="AD">AD</option>
+                <option value="IIM">IIM</option>
+                <option value="JL">JL</option>
+                <option value="GRH">GRH</option>
+                <option value="SI">SI</option>
+            </select>
+
+            <label>Année :</label>
+            <select name="annee" required>
+                <option value="" disabled selected>Choisir une année</option>
+                <option value="Licence 1">Licence 1</option>
+                <option value="Licence 2">Licence 2</option>
+                <option value="Licence 3">Licence 3</option>
+                <option value="Licence 4">Licence 4</option>
+                <option value="Licence 5">Licence 5</option>
+            </select>
+
+            <label>Emploi du temps (format JSON) :</label>
+            <textarea name="emploi_du_temps" rows="6" required>[
+    {
+        "jour": "Lundi",
+        "horaire": "8h-10h",
+        "matiere": "Mathématiques"
+    },
+    {
+        "jour": "Lundi",
+        "horaire": "10h-12h",
+        "matiere": "Informatique"
+    }
+]</textarea>
+
+            <label>Mot de passe étudiant :</label>
+            <input type="text" name="mot_de_passe" placeholder="Mot de passe unique" required>
+
+            <button type="submit">➕ Ajouter</button>
+        </form>
+    </section>
+    {% else %}
+    <p class="error">Vous n'avez pas l'autorisation d'ajouter ou de modifier des emplois du temps.</p>
+    {% endif %}
+
+    <section>
+        <h2>Liste des emplois du temps</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Matricule</th>
+                    <th>Filière</th>
+                    <th>Année</th>
+                    <th>Emploi du Temps</th>
+                    <th>Mot de passe</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for emploi in emplois %}
+                <tr>
+                    <form action="/modifier_emploi/{{ emploi.matricule }}" method="post">
+                        <td>{{ emploi.matricule }}</td>
+                        <td>
+                            {% if session['role'] == 'admin' %}
+                            <input type="text" name="filiere" value="{{ emploi.filiere }}" required>
+                            {% else %} {{ emploi.filiere }} {% endif %}
+                        </td>
+                        <td>
+                            {% if session['role'] == 'admin' %}
+                            <input type="text" name="annee" value="{{ emploi.annee }}" required>
+                            {% else %} {{ emploi.annee }} {% endif %}
+                        </td>
+                        <td>
+                            {% if session['role'] == 'admin' %}
+                            <textarea name="emploi_du_temps" rows="4" required>{{ emploi.emploi_du_temps | tojson }}</textarea>
+                            {% else %}
+                            <pre>{{ emploi.emploi_du_temps | tojson }}</pre>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if session['role'] == 'admin' %}
+                            <input type="text" name="mot_de_passe" value="{{ emploi.mot_de_passe }}" required>
+                            {% else %} {{ emploi.mot_de_passe }} {% endif %}
+                        </td>
+                        <td class="actions">
+                            {% if session['role'] == 'admin' %}
+                            <button type="submit" title="Modifier">💾</button>
+                            </form>
+                            <form action="/supprimer_emploi/{{ emploi.matricule }}" method="get" onsubmit="return confirm('Supprimer cet emploi du temps ?')">
+                                <button type="submit" class="delete" title="Supprimer">🗑️</button>
+                            </form>
+                            {% endif %}
+                        </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </section>
+</div>
+
+<style>
+    .container {
+        max-width: 1100px;
+        margin: auto;
+        padding: 20px;
+    }
+
+    .form-section {
+        background: #f1f1f1;
+        padding: 20px;
+        margin-bottom: 40px;
+        border-radius: 8px;
+    }
+
+    .form-emploi {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 10px;
+    }
+
+    input, select, textarea, button {
+        padding: 10px;
+        font-size: 15px;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        width: 100%;
+    }
+
+    button {
+        background-color: #28a745;
+        color: white;
+        border: none;
+        font-weight: bold;
+        cursor: pointer;
+    }
+
+    button.delete {
+        background-color: #dc3545;
+    }
+
+    button:hover {
+        opacity: 0.9;
+    }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    th, td {
+        border: 1px solid #ddd;
+        padding: 8px;
+        vertical-align: top;
+    }
+
+    th {
+        background-color: #f8f8f8;
+        font-weight: bold;
+    }
+
+    .actions {
+        display: flex;
+        gap: 5px;
+        flex-direction: column;
+    }
+
+    pre {
+        white-space: pre-wrap;
+        background: #f9f9f9;
+        padding: 5px;
+        border-radius: 4px;
+        font-family: monospace;
+        font-size: 14px;
+    }
+
+    .error {
+        color: red;
+        font-weight: bold;
+        margin: 10px 0;
+    }
+</style>
+{% endblock %}

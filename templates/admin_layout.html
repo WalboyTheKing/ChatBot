@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Interface Admin</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        html, body {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            overflow: hidden;
+            font-family: Arial, sans-serif;
+        }
+
+        body {
+            display: flex;
+        }
+
+        .sidebar {
+            width: 250px;
+            background-color: #343a40;
+            padding: 1rem;
+            color: white;
+            flex-shrink: 0;
+            height: 100vh;
+            overflow-y: auto;
+            position: fixed;
+            left: 0;
+            top: 0;
+            bottom: 0;
+        }
+
+        .sidebar h4 {
+            color: white;
+            margin-bottom: 20px;
+        }
+
+        .sidebar a {
+            display: block;
+            color: white;
+            padding: 10px;
+            margin: 5px 0;
+            text-decoration: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .sidebar a:hover {
+            background-color: #495057;
+        }
+
+        .sidebar .logout-button {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80%;
+            background-color: #dc3545;
+            color: white;
+            padding: 10px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .sidebar .logout-button:hover {
+            background-color: #c82333;
+        }
+
+        .main-content {
+            margin-left: 250px;
+            padding: 2rem;
+            height: 100vh;
+            overflow-y: auto;
+            width: calc(100% - 250px);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="sidebar">
+        <h4>Admin</h4>
+        <a data-url="{{ url_for('admin_questions') }}">➕ Questions/Réponses</a>
+        <a data-url="{{ url_for('admin_comptes') }}">👤 Comptes</a>
+        <a data-url="{{ url_for('admin_emplois') }}">📅 Emplois du temps</a> <!-- Vérifier cette ligne -->
+        
+        <!-- Bouton de déconnexion ajouté en bas -->
+        <form action="{{ url_for('logout') }}" method="post">
+            <button type="submit" class="logout-button">Déconnexion</button>
+        </form>
+    </div>
+
+    <div class="main-content" id="main-content">
+        {% block content %}
+        <p>Bienvenue sur le tableau de bord admin. Choisissez une section à gauche.</p>
+        {% endblock %}
+    </div>
+
+    <script>
+        document.querySelectorAll('.sidebar a').forEach(link => {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                const url = link.getAttribute('data-url');
+
+                fetch(url)
+                    .then(response => response.text())
+                    .then(html => {
+                        const parser = new DOMParser();
+                        const doc = parser.parseFromString(html, 'text/html');
+                        const content = doc.querySelector('#main-content');
+                        if (content) {
+                            document.querySelector('#main-content').innerHTML = content.innerHTML;
+                        } else {
+                            document.querySelector('#main-content').innerHTML = "<p>Erreur lors du chargement du contenu.</p>";
+                        }
+                    })
+                    .catch(error => {
+                        document.querySelector('#main-content').innerHTML = "<p>Erreur AJAX.</p>";
+                        console.error("Erreur:", error);
+                    });
+            });
+        });
+    </script>
+
+</body>
+</html>

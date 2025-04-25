@@ -1,0 +1,97 @@
+{% extends "admin_layout.html" %}
+{% block content %}
+<div class="container mt-4">
+    <h3>Gestion des comptes utilisateurs</h3>
+
+    <!-- Formulaire d'ajout -->
+    <form method="POST" action="/ajouter_compte" class="mb-4">
+        <div class="row">
+            <div class="col-md-3">
+                <input name="username" type="text" class="form-control" placeholder="Nom d'utilisateur" required>
+            </div>
+            <div class="col-md-3">
+                <input name="password" type="text" class="form-control" placeholder="Mot de passe" required>
+            </div>
+            <div class="col-md-2">
+                <select name="role" class="form-control">
+                    <option value="admin">Admin</option>
+                    <option value="utilisateur">Utilisateur</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <select name="statut" class="form-control">
+                    <option value="actif">Actif</option>
+                    <option value="bloqué">Bloqué</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <button class="btn btn-success w-100">Ajouter</button>
+            </div>
+        </div>
+    </form>
+
+    <!-- Filtre -->
+    <div class="mb-3">
+        <label for="filtreStatut">Filtrer par statut :</label>
+        <select id="filtreStatut" class="form-control w-25" onchange="filtrerStatut()">
+            <option value="tous">Tous</option>
+            <option value="actif">Actifs</option>
+            <option value="bloqué">Bloqués</option>
+        </select>
+    </div>
+
+    <!-- Liste des comptes -->
+    <table class="table table-bordered" id="tableComptes">
+        <thead>
+            <tr>
+                <th>Nom</th>
+                <th>Mot de passe</th>
+                <th>Rôle</th>
+                <th>Statut</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for compte in comptes %}
+            <tr data-statut="{{ compte.statut }}">
+                <form method="POST" action="/modifier_compte/{{ compte.username }}">
+                    <td><input name="username" class="form-control" value="{{ compte.username }}" {% if session['role'] != 'admin' %}readonly{% endif %}></td>
+                    <td><input name="password" class="form-control" type="text" value="{{ compte.password }}" {% if session['role'] != 'admin' %}readonly{% endif %}></td>
+                    <td>
+                        <select name="role" class="form-control" {% if session['role'] != 'admin' %}disabled{% endif %}>
+                            <option value="admin" {% if compte.role == 'admin' %}selected{% endif %}>Admin</option>
+                            <option value="utilisateur" {% if compte.role == 'utilisateur' %}selected{% endif %}>Utilisateur</option>
+                        </select>
+                    </td>
+                    <td>
+                        <select name="statut" class="form-control" {% if session['role'] != 'admin' %}disabled{% endif %}>
+                            <option value="actif" {% if compte.statut == 'actif' %}selected{% endif %}>Actif</option>
+                            <option value="bloqué" {% if compte.statut == 'bloqué' %}selected{% endif %}>Bloqué</option>
+                        </select>
+                    </td>
+                    <td>
+                        {% if session['role'] == 'admin' %}
+                            <button class="btn btn-primary btn-sm" type="submit">Modifier</button>
+                        {% endif %}
+                        <a href="/bloquer_compte/{{ compte.username }}" class="btn btn-danger btn-sm">
+                            {% if compte.statut == 'bloqué' %}Débloquer{% else %}Bloquer{% endif %}
+                        </a>
+                    </td>
+                </form>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<script>
+    function filtrerStatut() {
+        const filtre = document.getElementById('filtreStatut').value;
+        const lignes = document.querySelectorAll('#tableComptes tbody tr');
+        lignes.forEach(ligne => {
+            const statut = ligne.getAttribute('data-statut');
+            ligne.style.display = (filtre === 'tous' || statut === filtre) ? '' : 'none';
+        });
+    }
+</script>
+{% endblock %}
