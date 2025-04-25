@@ -5,6 +5,8 @@ from datetime import datetime
 from dotenv import load_dotenv
 import requests
 from functools import wraps
+from github import Github
+from github.GithubException import GithubException
 
 # Charger les variables d'environnement depuis le fichier .env
 load_dotenv()
@@ -15,58 +17,34 @@ PAGE_ACCESS_TOKEN = os.getenv('PAGE_ACCESS_TOKEN')
 FB_API_VERSION = os.getenv('FB_API_VERSION')
 ADMIN_USERNAME = os.getenv('ADMIN_USERNAME', 'admin')
 ADMIN_PASSWORD = os.getenv('ADMIN_PASSWORD', 'admin123')
+GITHUB_TOKEN = os.getenv('GITHUB_TOKEN')
+GITHUB_REPO = os.getenv('GITHUB_REPO')
+GITHUB_BRANCH = os.getenv('GITHUB_BRANCH', 'main')
 
 app = Flask(__name__)
 app.secret_key = os.urandom(24)
 
-DATA_FILE = 'data.json'  # Fichier de données pour les questions/réponses
-EMPLOIS_FILE = os.path.join(os.path.dirname(__file__), 'emplois_du_temps.json')  # Fichier pour les emplois du temps
-COMPTES_FILE = os.path.join(os.path.dirname(__file__), 'comptes.json')  # Fichier pour les comptes utilisateurs
+DATA_FILE = 'data.json'
+EMPLOIS_FILE = os.path.join(os.path.dirname(__file__), 'emplois_du_temps.json')
+COMPTES_FILE = os.path.join(os.path.dirname(__file__), 'comptes.json')
+
+# Initialiser le client GitHub
+g = Github(GITHUB_TOKEN) if GITHUB_TOKEN else None
+repo = g.get_repo(GITHUB_REPO) if g and GITHUB_REPO else None
 
 # Utils
-def charger_donnees():
+def charger_donnees(fichier=DATA_FILE):
     """Charge les données du fichier JSON"""
-    if not os.path.exists(DATA_FILE):
-        print(f"File {DATA_FILE} does not exist")
+    if not os.path.exists(fichier):
+        print(f"File {fichier} does not exist")
         return []
     try:
-        with open(DATA_FILE, 'r', encoding='utf-8') as f:
+        with open(fichier, 'r', encoding='utf-8') as f:
             data = json.load(f)
-            print(f"Loaded data from {DATA_FILE}: {data}")
+            print(f"Loaded data from {fichier}: {data}")
             return data
     except Exception as e:
-        print(f"Error loading {DATA_FILE}: {e}")
-        return []
-
-def charger_emplois():
-    """Charge les emplois du temps depuis le fichier JSON"""
-    if not os.path.exists(EMPLOIS_FILE):
-        print(f"File {EMPLOIS_FILE} does not exist")
-        return []
-    try:
-        with open(EMPLOIS_FILE, 'r', encoding='utf-8') as f:
-            data = json.load(f)
-            print(f"Loaded emplois from {EMPLOIS_FILE}: {data}")
-            return data
-    except json.JSONDecodeError as e:
-        print(f"JSON decode error in {EMPLOIS_FILE}: {e}")
-        return []
-    except Exception as e:
-        print(f"Error loading {EMPLOIS_FILE}: {e}")
-        return []
-
-def charger_comptes():
-    """Charge les comptes utilisateurs"""
-    if not os.path.exists(COMPTES_FILE):
-        print(f"File {COMPTES_FILE} does not exist")
-        return []
-    try:
-        with open(COMPTES_FILE, 'r', encoding='utf-8') as f:
-            data = json.load(f)
-            print(f"Loaded comptes from {COMPTES_FILE}: {data}")
-            return data
-    except Exception as e:
-        print(f"Error loading {COMPTES_FILE}: {e}")
+        print(f"Error loading {fichier}: {e}")
         return []
 
 def sauvegarder_donnees(donnees, fichier):
@@ -75,9 +53,65 @@ def sauvegarder_donnees(donnees, fichier):
         with open(fichier, 'w', encoding='utf-8') as f:
             json.dump(donnees, f, indent=2, ensure_ascii=False)
         print(f"Data saved to {fichier}")
+        # Vérifier si l'écriture a réussi
+        with open(fichier, 'r', encoding='utf-8') as f:
+            saved_data = json.load(f)
+        if saved_data == donnees:
+            print(f"Verified: Data successfully saved to {fichier}")
+            return True
+        else:
+            print(f"Error: Data not correctly saved to {fichier}")
+            return False
     except IOError as e:
         print(f"IO error saving to {fichier}: {e}")
-        raise
+        return False
+    except Exception as e:
+        print(f"Unexpected error saving to {fichier}: {e}")
+        return False
+
+def sync_to_github(fichier, commit_message):
+    """Synchronise un fichier JSON avec le dépôt GitHub"""
+    if not (g and repo):
+        print("GitHub client or repository not initialized")
+        return False
+    try:
+        # Lire le contenu du fichier local
+        with open(fichier, 'r', encoding='utf-8') as f:
+            content = f.read()
+        
+        # Obtenir le fichier existant dans le dépôt
+        try:
+            file = repo.get_contents(fichier, ref=GITHUB_BRANCH)
+            sha = file.sha
+        except GithubException as e:
+            print(f"File {fichier} not found in repository, creating new file: {e}")
+            sha = None
+
+        # Mettre à jour ou créer le fichier
+        if sha:
+            repo.update_file(
+                path=fichier,
+                message=commit_message,
+                content=content,
+                sha=sha,
+                branch=GITHUB_BRANCH
+            )
+            print(f"Updated {fichier} in GitHub repository")
+        else:
+            repo.create_file(
+                path=fichier,
+                message=commit_message,
+                content=content,
+                branch=GITHUB_BRANCH
+            )
+            print(f"Created {fichier} in GitHub repository")
+        return True
+    except GithubException as e:
+        print(f"GitHub error syncing {fichier}: {e}")
+        return False
+    except Exception as e:
+        print(f"Unexpected error syncing {fichier}: {e}")
+        return False
 
 def prochain_id(donnees):
     """Retourne le prochain ID disponible"""
@@ -97,11 +131,9 @@ def chercher_reponse(question, donnees):
             liste_questions = [item['question'] for item in donnees]
             reponse = "Voici les questions que vous pouvez poser :\n- " + "\n- ".join(liste_questions)
             return reponse
-
         for item in donnees:
             if item['question'].lower() == question.lower():
                 return item['reponse']
-
         return "Je n'ai pas compris votre question. Pouvez-vous reformuler ou taper 'aide' ?"
     except Exception as e:
         print(f"Error in chercher_reponse: {e}")
@@ -161,20 +193,42 @@ def admin_questions():
 @app.route('/admin/comptes')
 @login_required
 def admin_comptes():
-    comptes = charger_comptes()
+    comptes = charger_donnees(COMPTES_FILE)
     return render_template('admin_comptes.html', comptes=comptes)
 
 @app.route('/admin_emplois')
 @login_required
 def admin_emplois():
-    emplois = charger_emplois()
+    emplois = charger_donnees(EMPLOIS_FILE)
     return render_template('admin_emplois.html', emplois=emplois)
 
 @app.route('/admin/etudiants')
 @login_required
 def admin_etudiants():
-    emplois = charger_emplois()
+    emplois = charger_donnees(EMPLOIS_FILE)
     return render_template('admin_etudiants.html', emplois=emplois)
+
+@app.route('/admin/sync', methods=['POST'])
+@login_required
+def sync_git():
+    try:
+        success = True
+        for fichier, message in [
+            (DATA_FILE, "Mise à jour manuelle de data.json"),
+            (COMPTES_FILE, "Mise à jour manuelle de comptes.json"),
+            (EMPLOIS_FILE, "Mise à jour manuelle de emplois_du_temps.json")
+        ]:
+            if not sync_to_github(fichier, message):
+                success = False
+        if success:
+            flash('Synchronisation GitHub réussie pour tous les fichiers.', 'success')
+        else:
+            flash('Erreur lors de la synchronisation de certains fichiers.', 'danger')
+        return redirect(url_for('admin'))
+    except Exception as e:
+        print(f"Error during Git sync: {e}")
+        flash(f"Erreur lors de la synchronisation GitHub : {e}", 'danger')
+        return redirect(url_for('admin'))
 
 # CRUD Questions/Réponses
 @app.route('/ajouter', methods=['POST'])
@@ -185,28 +239,15 @@ def ajouter():
         reponse = request.form['reponse']
         print(f"Received form data: question={question}, reponse={reponse}")
         donnees = charger_donnees()
-        print(f"Current data: {donnees}")
         nouvel_id = prochain_id(donnees)
-        print(f"New ID: {nouvel_id}")
         donnees.append({'id': nouvel_id, 'question': question, 'reponse': reponse})
-        sauvegarder_donnees(donnees, DATA_FILE)
-        # Vérifier si l'écriture a réussi
-        with open(DATA_FILE, 'r', encoding='utf-8') as f:
-            saved_data = json.load(f)
-        if any(item['id'] == nouvel_id for item in saved_data):
-            print(f"Data successfully saved to {DATA_FILE}")
-            flash('Question ajoutée avec succès', 'success')
+        if sauvegarder_donnees(donnees, DATA_FILE):
+            if sync_to_github(DATA_FILE, f"Ajout de la question ID {nouvel_id}: {question}"):
+                flash('Question ajoutée et synchronisée avec GitHub.', 'success')
+            else:
+                flash('Question ajoutée localement, mais échec de la synchronisation GitHub.', 'warning')
         else:
-            print(f"Error: Data not saved to {DATA_FILE}")
-            flash('Erreur : Les données n’ont pas été enregistrées dans le fichier', 'danger')
-        return redirect(url_for('admin_questions'))
-    except KeyError as e:
-        print(f"Form error: Missing key {e}")
-        flash(f"Erreur : Champ manquant ({e})", 'danger')
-        return redirect(url_for('admin_questions'))
-    except IOError as e:
-        print(f"IO error saving to {DATA_FILE}: {e}")
-        flash(f"Erreur : Impossible d'enregistrer les données ({e})", 'danger')
+            flash('Erreur : Échec de l’enregistrement dans data.json.', 'danger')
         return redirect(url_for('admin_questions'))
     except Exception as e:
         print(f"Unexpected error in ajouter: {e}")
@@ -226,16 +267,13 @@ def modifier(id):
                 item['question'] = question
                 item['reponse'] = reponse
                 break
-        sauvegarder_donnees(donnees, DATA_FILE)
-        # Vérifier si l'écriture a réussi
-        with open(DATA_FILE, 'r', encoding='utf-8') as f:
-            saved_data = json.load(f)
-        if any(item['id'] == id and item['question'] == question and item['reponse'] == reponse for item in saved_data):
-            print(f"Data successfully saved to {DATA_FILE}")
-            flash('Question modifiée avec succès', 'success')
+        if sauvegarder_donnees(donnees, DATA_FILE):
+            if sync_to_github(DATA_FILE, f"Modification de la question ID {id}: {question}"):
+                flash('Question modifiée et synchronisée avec GitHub.', 'success')
+            else:
+                flash('Question modifiée localement, mais échec de la synchronisation GitHub.', 'warning')
         else:
-            print(f"Error: Modified data not saved to {DATA_FILE}")
-            flash('Erreur : Les modifications n’ont pas été enregistrées dans le fichier', 'danger')
+            flash('Erreur : Échec de l’enregistrement dans data.json.', 'danger')
         return redirect(url_for('admin_questions'))
     except Exception as e:
         print(f"Error in modifier: {e}")
@@ -248,17 +286,15 @@ def supprimer(id):
     try:
         print(f"Deleting ID {id}")
         donnees = charger_donnees()
+        question = next((item['question'] for item in donnees if int(item['id']) == id), "inconnue")
         donnees = [item for item in donnees if int(item['id']) != id]
-        sauvegarder_donnees(donnees, DATA_FILE)
-        # Vérifier si l'écriture a réussi
-        with open(DATA_FILE, 'r', encoding='utf-8') as f:
-            saved_data = json.load(f)
-        if not any(item['id'] == id for item in saved_data):
-            print(f"Data successfully saved to {DATA_FILE}")
-            flash('Question supprimée avec succès', 'danger')
+        if sauvegarder_donnees(donnees, DATA_FILE):
+            if sync_to_github(DATA_FILE, f"Suppression de la question ID {id}: {question}"):
+                flash('Question supprimée et synchronisée avec GitHub.', 'success')
+            else:
+                flash('Question supprimée localement, mais échec de la synchronisation GitHub.', 'warning')
         else:
-            print(f"Error: Data not saved to {DATA_FILE}")
-            flash('Erreur : La suppression n’a pas été enregistrée dans le fichier', 'danger')
+            flash('Erreur : Échec de l’enregistrement dans data.json.', 'danger')
         return redirect(url_for('admin_questions'))
     except Exception as e:
         print(f"Error in supprimer: {e}")
@@ -276,8 +312,7 @@ def ajouter_emploi():
         emploi_du_temps = request.form['emploi_du_temps']
         mot_de_passe = request.form['mot_de_passe']
         print(f"Adding emploi: matricule={matricule}, filiere={filiere}")
-
-        emplois = charger_emplois()
+        emplois = charger_donnees(EMPLOIS_FILE)
         nouvel_emploi = {
             'matricule': matricule,
             'filiere': filiere,
@@ -286,8 +321,13 @@ def ajouter_emploi():
             'mot_de_passe': mot_de_passe
         }
         emplois.append(nouvel_emploi)
-        sauvegarder_donnees(emplois, EMPLOIS_FILE)
-        flash('Emploi du temps ajouté avec succès', 'success')
+        if sauvegarder_donnees(emplois, EMPLOIS_FILE):
+            if sync_to_github(EMPLOIS_FILE, f"Ajout de l'emploi du temps pour matricule {matricule}"):
+                flash('Emploi du temps ajouté et synchronisé avec GitHub.', 'success')
+            else:
+                flash('Emploi du temps ajouté localement, mais échec de la synchronisation GitHub.', 'warning')
+        else:
+            flash('Erreur : Échec de l’enregistrement dans emplois_du_temps.json.', 'danger')
         return redirect(url_for('admin_emplois'))
     except Exception as e:
         print(f"Error in ajouter_emploi: {e}")
@@ -303,8 +343,7 @@ def modifier_emploi(matricule):
         emploi_du_temps = request.form['emploi_du_temps']
         mot_de_passe = request.form['mot_de_passe']
         print(f"Modifying emploi: matricule={matricule}")
-
-        emplois = charger_emplois()
+        emplois = charger_donnees(EMPLOIS_FILE)
         for emploi in emplois:
             if emploi['matricule'] == matricule:
                 emploi['filiere'] = filiere
@@ -316,8 +355,13 @@ def modifier_emploi(matricule):
                     return redirect(url_for('admin_emplois'))
                 emploi['mot_de_passe'] = mot_de_passe
                 break
-        sauvegarder_donnees(emplois, EMPLOIS_FILE)
-        flash('Emploi du temps modifié avec succès', 'success')
+        if sauvegarder_donnees(emplois, EMPLOIS_FILE):
+            if sync_to_github(EMPLOIS_FILE, f"Modification de l'emploi du temps pour matricule {matricule}"):
+                flash('Emploi du temps modifié et synchronisé avec GitHub.', 'success')
+            else:
+                flash('Emploi du temps modifié localement, mais échec de la synchronisation GitHub.', 'warning')
+        else:
+            flash('Erreur : Échec de l’enregistrement dans emplois_du_temps.json.', 'danger')
         return redirect(url_for('admin_emplois'))
     except Exception as e:
         print(f"Error in modifier_emploi: {e}")
@@ -329,10 +373,15 @@ def modifier_emploi(matricule):
 def supprimer_emploi(matricule):
     try:
         print(f"Deleting emploi: matricule={matricule}")
-        emplois = charger_emplois()
+        emplois = charger_donnees(EMPLOIS_FILE)
         emplois = [emploi for emploi in emplois if emploi['matricule'] != matricule]
-        sauvegarder_donnees(emplois, EMPLOIS_FILE)
-        flash('Emploi du temps supprimé avec succès', 'danger')
+        if sauvegarder_donnees(emplois, EMPLOIS_FILE):
+            if sync_to_github(EMPLOIS_FILE, f"Suppression de l'emploi du temps pour matricule {matricule}"):
+                flash('Emploi du temps supprimé et synchronisé avec GitHub.', 'success')
+            else:
+                flash('Emploi du temps supprimé localement, mais échec de la synchronisation GitHub.', 'warning')
+        else:
+            flash('Erreur : Échec de l’enregistrement dans emplois_du_temps.json.', 'danger')
         return redirect(url_for('admin_emplois'))
     except Exception as e:
         print(f"Error in supprimer_emploi: {e}")
@@ -348,7 +397,7 @@ def ajouter_compte():
         password = request.form['password']
         role = request.form['role']
         print(f"Adding compte: username={username}")
-        comptes = charger_comptes()
+        comptes = charger_donnees(COMPTES_FILE)
         nouvel_compte = {
             'username': username,
             'password': password,
@@ -356,8 +405,13 @@ def ajouter_compte():
             'status': 'active'
         }
         comptes.append(nouvel_compte)
-        sauvegarder_donnees(comptes, COMPTES_FILE)
-        flash('Compte ajouté avec succès', 'success')
+        if sauvegarder_donnees(comptes, COMPTES_FILE):
+            if sync_to_github(COMPTES_FILE, f"Ajout du compte {username}"):
+                flash('Compte ajouté et synchronisé avec GitHub.', 'success')
+            else:
+                flash('Compte ajouté localement, mais échec de la synchronisation GitHub.', 'warning')
+        else:
+            flash('Erreur : Échec de l’enregistrement dans comptes.json.', 'danger')
         return redirect(url_for('admin_comptes'))
     except Exception as e:
         print(f"Error in ajouter_compte: {e}")
@@ -372,15 +426,20 @@ def modifier_compte(username):
         role = request.form['role']
         status = request.form['status']
         print(f"Modifying compte: username={username}")
-        comptes = charger_comptes()
+        comptes = charger_donnees(COMPTES_FILE)
         for compte in comptes:
             if compte['username'] == username:
                 compte['password'] = password
                 compte['role'] = role
                 compte['status'] = status
                 break
-        sauvegarder_donnees(comptes, COMPTES_FILE)
-        flash('Compte modifié avec succès', 'success')
+        if sauvegarder_donnees(comptes, COMPTES_FILE):
+            if sync_to_github(COMPTES_FILE, f"Modification du compte {username}"):
+                flash('Compte modifié et synchronisé avec GitHub.', 'success')
+            else:
+                flash('Compte modifié localement, mais échec de la synchronisation GitHub.', 'warning')
+        else:
+            flash('Erreur : Échec de l’enregistrement dans comptes.json.', 'danger')
         return redirect(url_for('admin_comptes'))
     except Exception as e:
         print(f"Error in modifier_compte: {e}")
@@ -392,10 +451,15 @@ def modifier_compte(username):
 def supprimer_compte(username):
     try:
         print(f"Deleting compte: username={username}")
-        comptes = charger_comptes()
+        comptes = charger_donnees(COMPTES_FILE)
         comptes = [compte for compte in comptes if compte['username'] != username]
-        sauvegarder_donnees(comptes, COMPTES_FILE)
-        flash('Compte supprimé avec succès', 'danger')
+        if sauvegarder_donnees(comptes, COMPTES_FILE):
+            if sync_to_github(COMPTES_FILE, f"Suppression du compte {username}"):
+                flash('Compte supprimé et synchronisé avec GitHub.', 'success')
+            else:
+                flash('Compte supprimé localement, mais échec de la synchronisation GitHub.', 'warning')
+        else:
+            flash('Erreur : Échec de l’enregistrement dans comptes.json.', 'danger')
         return redirect(url_for('admin_comptes'))
     except Exception as e:
         print(f"Error in supprimer_compte: {e}")
@@ -457,7 +521,7 @@ def webhook():
 def obtenir_emploi_du_temps(matricule, mot_de_passe):
     """Récupère l'emploi du temps pour un matricule et mot de passe"""
     try:
-        emplois = charger_emplois()
+        emplois = charger_donnees(EMPLOIS_FILE)
         for emploi in emplois:
             if emploi['matricule'] == matricule and emploi['mot_de_passe'] == mot_de_passe:
                 return emploi['emploi_du_temps']
