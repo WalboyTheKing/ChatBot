@@ -1,4 +1,4 @@
-FLASK_APP=app.py
+from flask import Flask, render_template, request, redirect, url_for, flash, session
 import json
 import os
 from datetime import datetime
@@ -16,6 +16,7 @@ FB_API_VERSION = os.getenv('FB_API_VERSION')
 
 app = Flask(__name__)
 app.secret_key = os.urandom(24)
+# ... reste du code ...
 
 DATA_FILE = 'data.json'  # Fichier de données pour les questions/réponses
 EMPLOIS_FILE = os.path.join(
